@@ -199,7 +199,7 @@ async def get_version_info(reader: asyncio.StreamReader,
     await check_reply(
         reader,
         [
-            prefix + b' katcp-protocol 5.0-MI\n',
+            prefix + b' katcp-protocol 5.0-BMI\n',
             prefix + ' katcp-library aiokatcp-{} aiokatcp-{}\n'.format(
                 aiokatcp.minor_version(), aiokatcp.__version__).encode('ascii'),
             prefix + b' katcp-device dummy-1.0 dummy-build-1.0.0\n'
