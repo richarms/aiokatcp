@@ -34,7 +34,7 @@ import io
 import re
 import time
 from typing import (Set, Callable, Awaitable, Sequence, Iterable,
-                    Optional, List, Any, TypeVar, cast)
+                    Optional, List, Any, TypeVar, Tuple, cast)
 # Only used in type comments, so flake8 complains
 from typing import Dict    # noqa: F401
 
@@ -866,6 +866,76 @@ class DeviceServer(metaclass=DeviceServerMeta):
         else:
             params = (sensor.SensorSampler.Strategy.NONE,)
         return (name,) + params
+
+    async def request_sensor_sampling_bulk(
+            self, ctx: RequestContext, names: List[str],
+            strategy: sensor.SensorSampler.Strategy = None,
+            *args: bytes) -> Tuple[List[str], sensor.SensorSampler.Strategy]:
+        """Configure the way a set of sensors is sampled.
+
+        Sampled values are reported asynchronously using the #sensor-status
+        message.
+
+        Parameters
+        ----------
+        names
+            List of names of the sensors whose sampling strategy to query or
+            configure.
+        strategy
+            Type of strategy to use to report the sensor value. The
+            differential strategy type may only be used with integer or float
+            sensors. If this parameter is supplied, it sets the new strategy.
+        *args
+            Additional strategy parameters (dependent on the strategy type).
+            For the differential strategy, the parameter is an integer or float
+            giving the amount by which the sensor value may change before an
+            updated value is sent.
+            For the period strategy, the parameter is the sampling period
+            in float seconds.
+            The event strategy has no parameters. Note that this has changed
+            from KATCPv4.
+            For the event-rate strategy, a minimum period between updates and
+            a maximum period between updates (both in float seconds) must be
+            given. If the event occurs more than once within the minimum period,
+            only one update will occur. Whether or not the event occurs, the
+            sensor value will be updated at least once per maximum period.
+
+        Returns
+        -------
+        success : {'ok', 'fail'}
+            Whether the sensor-sampling request succeeded.
+        names : list of str
+            Name of the sensor queried or configured.
+        strategy : :class:`.SensorSampler.Strategy`
+            Name of the new or current sampling strategy for the sensor.
+
+        Examples
+        --------
+        ::
+
+            ?sensor-sampling cpu.power.on
+            !sensor-sampling ok cpu.power.on none
+
+            ?sensor-sampling cpu.power.on period 500
+            !sensor-sampling ok cpu.power.on period 500
+
+        """
+        if strategy is None:
+            raise FailReply('Cannot query multiple sensors in bulk.')
+        for name in names:
+            try:
+                self.sensors[name]
+            except KeyError:
+                raise FailReply('Unknown sensor {!r}'.format(name))
+        for name in names:
+            s = self.sensors[name]
+            try:
+                observer = ctx.conn.sensor_update
+                sampler = sensor.SensorSampler.factory(s, observer, self.loop, strategy, *args)
+            except (TypeError, ValueError) as error:
+                raise FailReply(str(error)) from error
+            ctx.conn.set_sampler(s, sampler)
+        return names, strategy
 
     async def request_client_list(self, ctx: RequestContext) -> None:
         """Request the list of connected clients.

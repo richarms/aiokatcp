@@ -228,6 +228,7 @@ async def test_help(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) 
     commands = sorted([
         'increment-counter', 'echo', 'bytes-arg', 'double', 'wait', 'crash',
         'client-list', 'log-level', 'sensor-list', 'sensor-sampling',
+        'sensor-sampling-bulk',
         'sensor-value', 'halt', 'help', 'watchdog', 'version-list'
     ])
     expected: List[Union[bytes, Pattern[bytes]]] = [
