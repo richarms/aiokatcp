@@ -395,7 +395,7 @@ class DeviceServer(metaclass=DeviceServerMeta):
         version = 'aiokatcp-{}'.format(aiokatcp.__version__)
         api_version = 'aiokatcp-{}'.format(aiokatcp.minor_version())
         ctx.informs([
-            ('katcp-protocol', '5.0-MI'),
+            ('katcp-protocol', '5.0-BMI'),
             ('katcp-library', api_version, version),
             ('katcp-device', self.VERSION, self.BUILD_STATE),
         ], send_reply=send_reply)
